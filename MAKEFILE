@@ -1,0 +1,16 @@
+obj = zmenu.obj
+bin = zmenu.exe
+
+CC = wcc
+CFLAGS = -zq
+LD = wlink
+
+$(bin): $(obj)
+	$(LD) name $@ file { $(obj) }
+
+.c.obj:
+	$(CC) -fo=$@ $(CFLAGS) $<
+
+clean: .symbolic
+	del *.obj
+	del $(bin)
