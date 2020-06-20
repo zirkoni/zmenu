@@ -28,6 +28,12 @@
 static const char* FILE_OPTION = "/file";
 static const char* ANSI_OPTION = "/noansi";
 
+struct SArguments
+{
+    unsigned fileNameIndex;
+    bool noAnsi;
+};
+
 struct SMenuItem
 {
     char* name;
@@ -60,7 +66,8 @@ void printHelp()
     printf("Up/Down arrow keys to change selection.\n");
     printf("Enter to accept.\n");
     printf("Escape to exit.\n\n");
-    printf("menu.txt entry example (character limits %u, %u and %u):\n", MAX_NAME_LENGTH - 1, MAX_PATH_LENGTH - 1, MAX_EXE_LENGTH - 1);
+    printf("menu.txt entry example (character limits %u, %u and %u):\n",
+            MAX_NAME_LENGTH - 1, MAX_PATH_LENGTH - 1, MAX_EXE_LENGTH - 1);
     printf("Commander Keen 1: Marooned on Mars\n");
     printf("c:\\keen1\n");
     printf("keen1.exe\n");
@@ -147,7 +154,7 @@ bool readMenuFromFile(char* fileName, struct SMenuItem** menu, int* numItems)
                 if(item->name == NULL)
                 {
                     copyString(&(item->name), line, len,
-                            MAX_NAME_LENGTH, feof(file));
+                        MAX_NAME_LENGTH, feof(file));
                 } else if(item->path == NULL)
                 {
                     copyString(&(item->path), line, len,
@@ -291,8 +298,7 @@ void updatePosition(bool down, int numItems, int* selected,
     }
 }
 
-bool parseArguments(int argc, char** argv,
-        unsigned* fileNameIndex, bool* noAnsi)
+bool parseArguments(int argc, char** argv, struct SArguments* arguments)
 {
     const unsigned MIN_NUM_ARGS = 3;
     bool foundFileArg = false;
@@ -309,11 +315,11 @@ bool parseArguments(int argc, char** argv,
             if(!strcmp(FILE_OPTION, argv[i]) &&
                     argc > (i + 1) && !foundFileArg)
             {
-                *fileNameIndex = i + 1;
+                arguments->fileNameIndex = i + 1;
                 foundFileArg = true;
             } else if(!strcmp(ANSI_OPTION, argv[i]))
             {
-                *noAnsi = true;
+                arguments->noAnsi = true;
             }
         }
     }
@@ -357,7 +363,7 @@ void runSelected(int selected, struct SMenuItem* menu, int* errorLevel)
                 break;
             } else
             {
-                printf("ERROR: file open failed %s\n", RUN_FILE);
+                printf("ERROR: file create failed %s\n", RUN_FILE);
             }
         }
 
@@ -375,11 +381,10 @@ void main(int argc, char* argv[])
     int last = 0;
     int key = 0;
     bool quit = false;
-    unsigned fileNameIndex = 0;
-    bool noAnsi = false;
+    struct SArguments arguments = { 0, false };
     
-    if(parseArguments(argc, argv, &fileNameIndex, &noAnsi) &&
-            readMenuFromFile(argv[fileNameIndex], &menu, &numItems))
+    if(parseArguments(argc, argv, &arguments) &&
+            readMenuFromFile(argv[arguments.fileNameIndex], &menu, &numItems))
     {
         screen(INT86_SET_TEXT_MODE);
         screen(INT86_HIDE_CURSOR);
@@ -393,7 +398,7 @@ void main(int argc, char* argv[])
             last = MAX_NUM_MENU_ITEMS - 1;
         }
 
-        printMenu(menu, selected, first, last, noAnsi);
+        printMenu(menu, selected, first, last, arguments.noAnsi);
     } else
     {
         quit = true;
@@ -430,12 +435,13 @@ void main(int argc, char* argv[])
             {
                 screen(INT86_CLEAR_SCREEN);
                 screen(INT86_SET_CURSOR_HOME);
-                printMenu(menu, selected, first, last, noAnsi);
+                printMenu(menu, selected, first, last, arguments.noAnsi);
             }
         }
     }
     
-    // todo: we should free the malloced memory (but when program exits, it's released anyway...)
+    // todo: we should free the malloced memory
+    // but when program exits, it's released anyway :)
     
     screen(INT86_RESTORE_CURSOR);
     exit(errorLevel);

@@ -1,16 +1,26 @@
 @echo off
 
+:: These can be modified
+set ZMENU_PATH=C:\ZMENU
+set ZMENU_CONF=ZMENU.TXT
+set ZMENU_ANSI=
+::set ZMENU_ANSI=/noansi
+
+
+:: Should not need to modify anything below this
+set ZMENU_BIN=%ZMENU_PATH%\ZMENU.EXE
+
 :start
-:: Clear errorlevel variable (errorlevel and %errorlevel% seem to be different variables in DOSBox)
+:: Clear errorlevel variable
 set errorlevel=0
 
-:: Check zmenu.exe path
-if not exist c:\zmenu\zmenu.exe echo ERROR[zmenu.bat]: Default path c:\zmenu\zmenu.exe does not exist
-if not exist c:\zmenu\zmenu.exe goto end
+:: Check zmenu binary path
+if not exist %ZMENU_BIN% echo ERROR[zmenu.bat]: Path %ZMENU_BIN% does not exist
+if not exist %ZMENU_BIN% goto end
 
-:: Start zmenu.exe, read menu from zmenu.txt
-cd c:\zmenu
-zmenu.exe /file zmenu.txt
+:: Start zmenu.exe, read menu from file
+cd %ZMENU_PATH%
+zmenu.exe /file %ZMENU_CONF% %ZMENU_ANSI%
 
 :: zmenu.exe exit requested or error
 if errorlevel 1 goto end
