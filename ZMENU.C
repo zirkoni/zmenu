@@ -347,11 +347,11 @@ void runSelected(int selected, struct SMenuItem* menu, int* errorLevel)
 
             if(file != NULL)
             {
-                fprintf(file, "set errorlevel=1\n");
+                fprintf(file, "set errorlevel=%u\n", ERRORLEVEL_EXIT_ERROR);
                 fprintf(file, "if not exist %s\\%s goto not_exist\n",
                         item->path, item->executable);
                 fprintf(file, "cd %s\n", item->path);
-                fprintf(file, "call  %s\n", item->executable);
+                fprintf(file, "call %s\n", item->executable);
                 fprintf(file, "set errorlevel=%u\n", ERRORLEVEL_CONTINUE);
                 fprintf(file, "goto end\n");
                 fprintf(file, ":not_exist\n");

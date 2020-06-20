@@ -7,12 +7,14 @@ set ZMENU_ANSI=
 ::set ZMENU_ANSI=/noansi
 
 
-:: Should not need to modify anything below this
+:: Should not need to modify anything below this line
 set ZMENU_BIN=%ZMENU_PATH%\ZMENU.EXE
+set ERRORLEVEL_CONTINUE=0
+set ERRORLEVEL_EXIT_ERROR=1
 
 :start
 :: Clear errorlevel variable
-set errorlevel=0
+set errorlevel=%ERRORLEVEL_CONTINUE%
 
 :: Check zmenu binary path
 if not exist %ZMENU_BIN% echo ERROR[zmenu.bat]: Path %ZMENU_BIN% does not exist
@@ -23,13 +25,13 @@ cd %ZMENU_PATH%
 zmenu.exe /file %ZMENU_CONF% %ZMENU_ANSI%
 
 :: zmenu.exe exit requested or error
-if errorlevel 1 goto end
+if errorlevel %ERRORLEVEL_EXIT_ERROR% goto end
 
 :: Run selected command
 call zzz_tmp.bat
 
 :: Error, for example because of invalid path in menu.txt
-if %errorlevel%==1 goto end
+if %errorlevel%==%ERRORLEVEL_EXIT_ERROR% goto end
 
 :: Loop, start zmenu.exe again after selected command has finished
 goto start
