@@ -6,15 +6,16 @@
 #include <i86.h>
 #include <conio.h>
 
-#define KEY_SELECT 13
-#define KEY_QUIT   27
-#define KEY_UP     328
-#define KEY_DOWN   336
+#define KEY_SELECT     13
+#define KEY_QUIT       27
+#define KEY_UP        328
+#define KEY_DOWN      336
+#define KEY_BACKSPACE   8
 
-#define MAX_NAME_LENGTH    60
-#define MAX_PATH_LENGTH    36
-#define MAX_EXE_LENGTH     12
-#define MAX_NUM_MENU_ITEMS 23
+#define MAX_NAME_LENGTH         60
+#define MAX_PATH_LENGTH         36
+#define MAX_EXE_LENGTH          12
+#define MAX_NUM_ITEMS_ON_SCREEN 23
 
 #define INT86_SET_TEXT_MODE   0
 #define INT86_SET_CURSOR_HOME 1
@@ -27,6 +28,10 @@
 
 static const char* FILE_OPTION = "/file";
 static const char* ANSI_OPTION = "/noansi";
+
+typedef long unsigned index_t;
+
+index_t g_numItems = 0;
 
 struct SArguments
 {
@@ -64,13 +69,16 @@ void printHelp()
     printf("Usage: zmenu.exe %s menu.txt [%s]\n\n", FILE_OPTION, ANSI_OPTION);
     printf("Keys:\n");
     printf("Up/Down arrow keys to change selection.\n");
+    printf("Number keys to jump to index.\n");
     printf("Enter to accept.\n");
     printf("Escape to exit.\n\n");
     printf("menu.txt entry example (character limits %u, %u and %u):\n",
             MAX_NAME_LENGTH - 1, MAX_PATH_LENGTH - 1, MAX_EXE_LENGTH - 1);
     printf("Commander Keen 1: Marooned on Mars\n");
     printf("c:\\keen1\n");
-    printf("keen1.exe\n");
+    printf("keen1.exe\n\n");
+    printf("Output on screen:\n");
+    printf("0. Commander Keen 1: Marooned on Mars\n");
 }
 
 void printMenu(struct SMenuItem* menu, int selected,
@@ -107,22 +115,68 @@ void printMenu(struct SMenuItem* menu, int selected,
     }
 }
 
-void copyString(char** to, char* from, size_t size,
-        size_t maxSize, int endOfFile)
+int numDigits(index_t number)
 {
-    if(endOfFile) ++size;
-    if(size > maxSize) size = maxSize;
+    int result = 1;
+    while(number /= 10)
+    {
+        ++result;
+    }
 
-    (*to) = malloc(size);
+    return result;
+}
+
+bool copyStringWithPrefix(char** to, char* from, size_t size,
+        size_t maxSize, int endOfFile, bool usePrefix, index_t prefix)
+{
+    int offset = 0;
+    size_t realSize = size;
+
+    if(usePrefix)
+    {
+        offset = numDigits(prefix) + 2; // dot + space = +2
+        realSize = realSize + offset;
+    }
+
+    if(endOfFile) ++realSize;
+    if(realSize > maxSize)
+    {
+        realSize = maxSize;
+        size = realSize - offset;
+    }
+
+    (*to) = malloc(realSize);
 
     if((*to) != NULL)
     {
-        memcpy((*to), from, size);
-        (*to)[size - 1] = 0;
+        if(usePrefix)
+        {
+            sprintf((*to), "%lu. ", g_numItems);
+        }
+
+        memcpy((*to) + offset, from, size);
+        (*to)[realSize - 1] = 0;
+    } else
+    {
+        printf("ERROR: malloc failed. Menu too big?\n");
+        return false;
     }
+
+    return true;
 }
 
-bool readMenuFromFile(char* fileName, struct SMenuItem** menu, int* numItems)
+bool copyString(char** to, char* from, size_t size,
+        size_t maxSize, int endOfFile)
+{
+    return copyStringWithPrefix(to, from, size, maxSize, endOfFile, false, 0);
+}
+
+bool copyName(char** to, char* from, size_t size, int endOfFile)
+{
+    return copyStringWithPrefix(to, from, size, MAX_NAME_LENGTH, endOfFile, true, g_numItems);
+}
+
+bool readMenuFromFile(char* fileName, struct SMenuItem** menu)
 {
     bool readFileOk = true;
     FILE* file = fopen(fileName, "r");
@@ -153,15 +207,14 @@ bool readMenuFromFile(char* fileName, struct SMenuItem** menu, int* numItems)
             
                 if(item->name == NULL)
                 {
-                    copyString(&(item->name), line, len,
-                        MAX_NAME_LENGTH, feof(file));
+                    readFileOk = copyName(&(item->name), line, len, feof(file));
                 } else if(item->path == NULL)
                 {
-                    copyString(&(item->path), line, len,
+                    readFileOk = copyString(&(item->path), line, len,
                         MAX_PATH_LENGTH, feof(file));
                 } else
                 {
-                    copyString(&(item->executable), line, len,
+                    readFileOk = copyString(&(item->executable), line, len,
                         MAX_EXE_LENGTH, feof(file));
 
                     if(*menu == NULL)
@@ -175,9 +228,13 @@ bool readMenuFromFile(char* fileName, struct SMenuItem** menu, int* numItems)
                     }
 
                     item = NULL;
-                    *numItems = *numItems + 1;
+                    g_numItems = g_numItems + 1;
                 }
 
+                if(!readFileOk)
+                {
+                    break;
+                }
             }
         }
 
@@ -245,8 +302,59 @@ int checkKey()
     }
 }
 
-void updatePosition(bool down, int numItems, int* selected,
-        int* first, int* last)
+void printInput(index_t* inputIndex)
+{
+    screen(INT86_SET_CURSOR_HOME);
+    printf("Goto index: %lu          \n", *inputIndex); // Write spaces to overwrite deleted (backspace) digits
+}
+
+void appendInputIndex(int key, index_t* inputIndex)
+{
+    if(key >= '0' && key <= '9')
+    {
+        index_t newValue = 0;
+        newValue = *inputIndex * 10 + key - '0';
+        if(newValue < g_numItems)
+        {
+            *inputIndex = newValue;
+        }
+    } else if(key == KEY_BACKSPACE)
+    {
+        *inputIndex = *inputIndex / 10;
+    }
+}
+
+bool handleAdditionalInput(int key, index_t* inputIndex)
+{
+    bool changeToIndex = false;
+    appendInputIndex(key, inputIndex);
+    printInput(inputIndex);
+
+    while(true)
+    {
+        if(kbhit())
+        {
+            key = checkKey();
+
+            if(key == KEY_QUIT)
+            {
+                break;
+            } else if(key == KEY_SELECT)
+            {
+                changeToIndex = true;
+                break;
+            } else
+            {
+                appendInputIndex(key, inputIndex);
+                printInput(inputIndex);
+            }
+        }
+    }
+
+    return changeToIndex;
+}
+
+void updatePosition(bool down, index_t* selected, index_t* first, index_t* last)
 {
     if(down)
     {
@@ -258,43 +366,57 @@ void updatePosition(bool down, int numItems, int* selected,
             *last = *selected;
         }
 
-        if(*selected == numItems)
+        if(*selected == g_numItems)
         {
             *selected = 0;
             *first = 0;
 
-            if(numItems < MAX_NUM_MENU_ITEMS)
+            if(g_numItems < MAX_NUM_ITEMS_ON_SCREEN)
             {
-                *last = numItems - 1;
+                *last = g_numItems - 1;
             } else
             {
-                *last = MAX_NUM_MENU_ITEMS - 1;
+                *last = MAX_NUM_ITEMS_ON_SCREEN - 1;
             }
         }
     } else
     {
-        *selected = (*selected) - 1;
-
-        if(*selected < *first)
+        if(*selected > 0)
         {
-            (*first)--;
-            (*last)--;
-        }
-
-        if(*selected < 0)
+            *selected = (*selected) - 1;
+        } else
         {
-            *selected = numItems - 1;
-
-            if(numItems >= MAX_NUM_MENU_ITEMS)
+            *selected = g_numItems - 1;
+            if(g_numItems >= MAX_NUM_ITEMS_ON_SCREEN)
             {
-                *first = numItems - MAX_NUM_MENU_ITEMS;
+                *first = g_numItems - MAX_NUM_ITEMS_ON_SCREEN;
             } else
             {
                 *first = 0;
             }
 
            *last = *selected;
-        } 
+        }
+
+        if(*selected < *first)
+        {
+            (*first)--;
+            (*last)--;
+        }
+    }
+}
+
+void jumpToPosition(index_t inputIndex, index_t* selected, index_t* first, index_t* last)
+{
+    while(inputIndex != *selected)
+    {
+        if(inputIndex > *selected)
+        {
+            updatePosition(true, selected, first, last);
+        } else if(inputIndex < *selected)
+        {
+            updatePosition(false, selected, first, last);
+        }
     }
 }
 
@@ -332,9 +454,9 @@ bool parseArguments(int argc, char** argv, struct SArguments* arguments)
     return foundFileArg;
 }
 
-void runSelected(int selected, struct SMenuItem* menu, int* errorLevel)
+void runSelected(index_t selected, struct SMenuItem* menu, int* errorLevel)
 {
-    int i;
+    index_t i;
     struct SMenuItem* item = menu;
     const char* RUN_FILE = "ZZZ_TMP.BAT";
 
@@ -375,27 +497,27 @@ void main(int argc, char* argv[])
 {
     struct SMenuItem* menu = NULL;
     int errorLevel = ERRORLEVEL_EXIT_ERROR;
-    int numItems = 0;
-    int selected = 0;
-    int first = 0;
-    int last = 0;
+    index_t selected = 0;
+    index_t first = 0;
+    index_t last = 0;
     int key = 0;
+    index_t inputIndex = 0;
     bool quit = false;
     struct SArguments arguments = { 0, false };
     
     if(parseArguments(argc, argv, &arguments) &&
-            readMenuFromFile(argv[arguments.fileNameIndex], &menu, &numItems))
+            readMenuFromFile(argv[arguments.fileNameIndex], &menu))
     {
         screen(INT86_SET_TEXT_MODE);
         screen(INT86_HIDE_CURSOR);
         screen(INT86_SET_CURSOR_HOME);
         
-        if(numItems < MAX_NUM_MENU_ITEMS)
+        if(g_numItems < MAX_NUM_ITEMS_ON_SCREEN)
         {
-            last = numItems - 1;
+            last = g_numItems - 1;
         } else
         {
-            last = MAX_NUM_MENU_ITEMS - 1;
+            last = MAX_NUM_ITEMS_ON_SCREEN - 1;
         }
 
         printMenu(menu, selected, first, last, arguments.noAnsi);
@@ -408,6 +530,7 @@ void main(int argc, char* argv[])
     {
         if(kbhit())
         {
+            bool changeToIndex = false;
             key = checkKey();
 
             switch(key)
@@ -417,20 +540,29 @@ void main(int argc, char* argv[])
                     errorLevel = ERRORLEVEL_EXIT_ERROR;
                     break;
                 case KEY_UP:
-                    updatePosition(false, numItems, &selected, &first, &last);
+                    updatePosition(false, &selected, &first, &last);
                     break;
                 case KEY_DOWN:
-                    updatePosition(true, numItems, &selected, &first, &last);
+                    updatePosition(true, &selected, &first, &last);
                     break;
                 case KEY_SELECT:
                     runSelected(selected, menu, &errorLevel);
                     quit = true;
                     break;
                 default:
+                    changeToIndex = handleAdditionalInput(key, &inputIndex);
                     break;
             }
 
+            if(changeToIndex)
+            {
+                if(inputIndex < g_numItems)
+                {
+                    jumpToPosition(inputIndex, &selected, &first, &last);
+                }
+            }
 
+            inputIndex = 0;
             if(!quit)
             {
                 screen(INT86_CLEAR_SCREEN);
