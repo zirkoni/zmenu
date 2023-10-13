@@ -2,20 +2,27 @@
 Simple menu program for DOS
 
 ## What's the point?
-- just for fun
-- batch menus in DOSBox limited to characters 0-9 and A-Z  (max. ~36 entries)
-- no simple way to use the arrow keys to navigate batch menus in DOSBox
+- Just for fun
+- Batch menus in DOSBox limited to characters 0-9 and A-Z  (max. ~36 entries)
+- No simple way to use the arrow keys to navigate batch menus in DOSBox
 
 ## Compiling
-OpenWatcom: http://openwatcom.org/
+~~OpenWatcom: http://openwatcom.org/~~
+
+UPDATE: Use Open Watcom v2:
+https://github.com/open-watcom/open-watcom-v2
+
+Run the _wmake_ command to compile.
 
 ## Usage
 1. Put all the zmenu files in C:\ZMENU
-    - you can change the default path in ZMENU.BAT
+    - You can change the default path in ZMENU.BAT
 2. Update ZMENU.TXT to whatever entries you want in your menu
-    - the examples should give you an idea what you need to write
-3. run ZMENU.BAT
+    - The examples should give you an idea what you need to write
+3. Run ZMENU.BAT
 4. Keys:
-    - up/down arrow keys
-    - enter runs currently selected item
-    - esc to exit
+    - Up/down arrow keys
+    - Enter runs currently selected item
+    - Esc to exit
+    - UPDATE: You can type a number to jump to index
+        - Enter and escape keys work for accept/exit here as well
