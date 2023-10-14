@@ -9,10 +9,16 @@ Simple menu program for DOS
 ## Compiling
 ~~OpenWatcom: http://openwatcom.org/~~
 
-UPDATE: Use Open Watcom v2:
+Use Open Watcom v2:
 https://github.com/open-watcom/open-watcom-v2
 
 Run the _wmake_ command to compile.
+
+The 32-bit executable can be compiled with the following command:
+_wmake_ _zmenu32.exe_
+
+Or to compile both 16- and 32-bit executables:
+_wmake_ _all_
 
 ## Usage
 1. Put all the zmenu files in C:\ZMENU
@@ -24,5 +30,5 @@ Run the _wmake_ command to compile.
     - Up/down arrow keys
     - Enter runs currently selected item
     - Esc to exit
-    - UPDATE: You can type a number to jump to index
+    - You can also type a number to jump to index
         - Enter and escape keys work for accept/exit here as well
