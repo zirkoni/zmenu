@@ -1,16 +1,34 @@
 obj = zmenu.obj
 bin = zmenu.exe
+obj32 = zmenu32.obj
+bin32 = zmenu32.exe
 
 CC = wcc
+CC32 = wcc386
 CFLAGS = -zq
 LD = wlink
 
+system = dos
+system32 = dos4g
+
+all: $(bin) $(bin32) .SYMBOLIC
+    @%null
+
 $(bin): $(obj)
-	$(LD) name $@ file { $(obj) }
+	$(LD) system $(system) name $@ file { $(obj) }
 
-.c.obj:
-	$(CC) -fo=$@ $(CFLAGS) $<
+$(bin32): $(obj32)
+	$(LD) system $(system32) name $@ file { $(obj32) }
 
-clean: .symbolic
-	del *.obj
-	del $(bin)
+$(obj): zmenu.c
+	$(CC) -fo=$(obj) $(CFLAGS) $<
+
+$(obj32): zmenu.c
+	$(CC32) -fo=$(obj32) $(CFLAGS) $<
+
+clean: .SYMBOLIC
+	@if exist $(obj) del $(obj)
+	@if exist $(obj32) del $(obj32)
+	@if exist $(bin) del $(bin)
+	@if exist $(bin32) del $(bin32)
+	@if exist *.ERR del *.ERR

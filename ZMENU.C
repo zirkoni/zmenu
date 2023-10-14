@@ -285,14 +285,22 @@ void screen(const unsigned op)
             break;
     }
 
+#if defined(__386__)
+    int386(0x10, &regs, &regs);
+#else
     int86(0x10, &regs, &regs);
+#endif
 }
 
 int checkKey()
 {
     union REGS regs;
     regs.h.ah = 0x08;
+#if defined(__386__)
+    int386(0x21, &regs, &regs);
+#else
     int86(0x21, &regs, &regs);
+#endif
     if(regs.h.al == 0)
     {
         return(checkKey() + 0x100);

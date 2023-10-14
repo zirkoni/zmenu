@@ -1,14 +1,16 @@
 @echo off
 
 :: These can be modified
+set ZMENU_BIN=ZMENU.EXE
+::set ZMENU_BIN=ZMENU32.EXE
 set ZMENU_PATH=C:\ZMENU
 set ZMENU_CONF=ZMENU.TXT
-set ZMENU_ANSI=
-::set ZMENU_ANSI=/noansi
+set ZMENU_ARGS=
+::set ZMENU_ARGS=/noansi
 
 
 :: Should not need to modify anything below this line
-set ZMENU_BIN=%ZMENU_PATH%\ZMENU.EXE
+set ZMENU_BIN_PATH=%ZMENU_PATH%\%ZMENU_BIN%
 set ERRORLEVEL_CONTINUE=0
 set ERRORLEVEL_EXIT_ERROR=1
 
@@ -17,12 +19,12 @@ set ERRORLEVEL_EXIT_ERROR=1
 set errorlevel=%ERRORLEVEL_CONTINUE%
 
 :: Check zmenu binary path
-if not exist %ZMENU_BIN% echo ERROR[zmenu.bat]: Path %ZMENU_BIN% does not exist
-if not exist %ZMENU_BIN% goto end
+if not exist %ZMENU_BIN_PATH% echo ERROR[zmenu.bat]: Path %ZMENU_BIN_PATH% does not exist
+if not exist %ZMENU_BIN_PATH% goto end
 
 :: Start zmenu.exe, read menu from file
 cd %ZMENU_PATH%
-zmenu.exe /file %ZMENU_CONF% %ZMENU_ANSI%
+%ZMENU_BIN% /file %ZMENU_CONF% %ZMENU_ARGS%
 
 :: zmenu.exe exit requested or error
 if errorlevel %ERRORLEVEL_EXIT_ERROR% goto end
