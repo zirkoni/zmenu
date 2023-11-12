@@ -6,7 +6,8 @@ set ZMENU_BIN=ZMENU.EXE
 set ZMENU_PATH=C:\ZMENU
 set ZMENU_CONF=ZMENU.TXT
 set ZMENU_ARGS=
-::set ZMENU_ARGS=/noansi
+::set ZMENU_ARGS=%ZMENU_ARGS% /noansi
+::set ZMENU_ARGS=%ZMENU_ARGS% /col
 
 
 :: Should not need to modify anything below this line

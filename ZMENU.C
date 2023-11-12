@@ -10,33 +10,42 @@
 #define KEY_QUIT       27
 #define KEY_UP        328
 #define KEY_DOWN      336
+#define KEY_LEFT      331
+#define KEY_RIGHT     333
 #define KEY_BACKSPACE   8
 
-#define MAX_NAME_LENGTH         60
-#define MAX_PATH_LENGTH         36
-#define MAX_EXE_LENGTH          12
-#define MAX_NUM_ITEMS_ON_SCREEN 23
+#define MAX_NAME_LENGTH_1         60
+#define MAX_NAME_LENGTH_2         38
+#define MAX_PATH_LENGTH           36
+#define MAX_EXE_LENGTH            12
+#define MAX_NUM_ITEMS_ON_SCREEN_1 23
+#define MAX_NUM_ITEMS_ON_SCREEN_2 46
 
 #define INT86_SET_TEXT_MODE   0
 #define INT86_SET_CURSOR_HOME 1
 #define INT86_HIDE_CURSOR     2
 #define INT86_CLEAR_SCREEN    3
 #define INT86_RESTORE_CURSOR  4
+#define INT86_SET_CURSOR_POS  5
 
 #define ERRORLEVEL_CONTINUE   0
 #define ERRORLEVEL_EXIT_ERROR 1
 
-static const char* FILE_OPTION = "/file";
-static const char* ANSI_OPTION = "/noansi";
+static const char* FILE_OPTION    = "/file";
+static const char* COLUMNS_OPTION = "/col";
+static const char* ANSI_OPTION    = "/noansi";
 
 typedef long unsigned index_t;
 
 index_t g_numItems = 0;
+size_t g_maxNameLength = MAX_NAME_LENGTH_1;
+size_t g_maxNumItemsOnScreen = MAX_NUM_ITEMS_ON_SCREEN_1;
 
 struct SArguments
 {
     unsigned fileNameIndex;
     bool noAnsi;
+    bool columns;
 };
 
 struct SMenuItem
@@ -47,6 +56,9 @@ struct SMenuItem
 
     struct SMenuItem* next;
 };
+
+// TODO: all declarations here or header file + multiple c-files?
+void setCursorPosition(unsigned short x, unsigned short y);
 
 struct SMenuItem* newMenuItem()
 {
@@ -73,7 +85,7 @@ void printHelp()
     printf("Enter to accept.\n");
     printf("Escape to exit.\n\n");
     printf("menu.txt entry example (character limits %u, %u and %u):\n",
-            MAX_NAME_LENGTH - 1, MAX_PATH_LENGTH - 1, MAX_EXE_LENGTH - 1);
+            g_maxNameLength - 1, MAX_PATH_LENGTH - 1, MAX_EXE_LENGTH - 1);
     printf("Commander Keen 1: Marooned on Mars\n");
     printf("c:\\keen1\n");
     printf("keen1.exe\n\n");
@@ -82,9 +94,11 @@ void printHelp()
 }
 
 void printMenu(struct SMenuItem* menu, int selected,
-        int first, int last, bool noAnsi)
+        int first, int last, bool noAnsi, bool twoColumns)
 {
     int i = 0;
+    unsigned short xOffset = 0;
+    unsigned short yOffset = 0;
     struct SMenuItem* item = menu;
 
     while(i < first)
@@ -93,20 +107,24 @@ void printMenu(struct SMenuItem* menu, int selected,
         ++i;
     }
 
-    printf("\n");
     while(i <= last)
     {
+        xOffset = twoColumns * (i % 2) * (g_maxNameLength + 2);
+        yOffset = (i - first) / (2 - !twoColumns) + 1;
+
+        setCursorPosition(yOffset, xOffset);
+
         if(i != selected)
         {
-            printf(" %s\n", item->name);
+            printf(" %s", item->name);
         } else
         {
             if(!noAnsi)
             {
-                printf(" \033[7m%s\n\033[0m", item->name);
+                printf(" \033[7m%s\033[0m", item->name);
             } else
             {
-                printf("[%s]\n", item->name);
+                printf("[%s]", item->name);
             }
         }
 
@@ -173,7 +191,7 @@ bool copyString(char** to, char* from, size_t size,
 
 bool copyName(char** to, char* from, size_t size, int endOfFile)
 {
-    return copyStringWithPrefix(to, from, size, MAX_NAME_LENGTH, endOfFile, true, g_numItems);
+    return copyStringWithPrefix(to, from, size, g_maxNameLength, endOfFile, true, g_numItems);
 }
 
 bool readMenuFromFile(char* fileName, struct SMenuItem** menu)
@@ -248,7 +266,7 @@ bool readMenuFromFile(char* fileName, struct SMenuItem** menu)
     return readFileOk;
 }
 
-void screen(const unsigned op)
+void screenDo(const unsigned op, unsigned short arg1, unsigned short arg2)
 {
     union REGS regs;
 
@@ -259,11 +277,12 @@ void screen(const unsigned op)
             regs.h.al = 0x03;
             break;
 
+        case INT86_SET_CURSOR_POS:
         case INT86_SET_CURSOR_HOME:
             regs.h.ah = 0x02;
             regs.h.bh = 0x00;
-            regs.h.dh = 0x00;
-            regs.h.dl = 0x00;
+            regs.h.dh = arg1;
+            regs.h.dl = arg2;
             break;
 
         case INT86_HIDE_CURSOR:
@@ -290,6 +309,16 @@ void screen(const unsigned op)
 #else
     int86(0x10, &regs, &regs);
 #endif
+}
+
+void screen(const unsigned op)
+{
+    screenDo(op, 0, 0);
+}
+
+void setCursorPosition(unsigned short x, unsigned short y)
+{
+    screenDo(INT86_SET_CURSOR_POS, x, y);
 }
 
 int checkKey()
@@ -362,68 +391,149 @@ bool handleAdditionalInput(int key, index_t* inputIndex)
     return changeToIndex;
 }
 
-void updatePosition(bool down, index_t* selected, index_t* first, index_t* last)
+void updatePositionUp(index_t* selected, index_t* first, index_t* last, bool twoColumns)
 {
-    if(down)
+    int step = 1 + twoColumns;
+
+    if(*selected >= step)
     {
-        *selected = (*selected) + 1;
-
-        if(*selected > *last)
-        {
-            (*first)++;
-            *last = *selected;
-        }
-
-        if(*selected == g_numItems)
-        {
-            *selected = 0;
-            *first = 0;
-
-            if(g_numItems < MAX_NUM_ITEMS_ON_SCREEN)
-            {
-                *last = g_numItems - 1;
-            } else
-            {
-                *last = MAX_NUM_ITEMS_ON_SCREEN - 1;
-            }
-        }
+        *selected = (*selected) - step;
     } else
     {
-        if(*selected > 0)
+        if(g_numItems % 2 == 0)
         {
-            *selected = (*selected) - 1;
+            *selected = g_numItems - 1 - twoColumns * (*selected % 2 ? 0 : 1);
         } else
         {
-            *selected = g_numItems - 1;
-            if(g_numItems >= MAX_NUM_ITEMS_ON_SCREEN)
-            {
-                *first = g_numItems - MAX_NUM_ITEMS_ON_SCREEN;
-            } else
-            {
-                *first = 0;
-            }
-
-           *last = *selected;
+            *selected = g_numItems - 1 - twoColumns * (*selected % 2 ? 1 : 0);
         }
 
-        if(*selected < *first)
+        if(g_numItems >= g_maxNumItemsOnScreen)
         {
-            (*first)--;
-            (*last)--;
+            *first = g_numItems - g_maxNumItemsOnScreen;
+            *first += twoColumns * (*first & 1);
+        } else
+        {
+            *first = 0;
+        }
+
+        if(g_numItems % 2 == 0)
+        {
+           *last = *selected + twoColumns * (*selected % 2 ? 0 : 1);
+        } else
+        {
+           *last = *selected + twoColumns * (*selected % 2 ? 1 : 0);
+        }
+    }
+
+    if(*selected < *first)
+    {
+        *first = *first - step;
+
+        if(g_numItems % 2 != 0 && *last == (g_numItems - 1))
+        {
+            *last = *last - 1;
+        } else
+        {
+            *last = *last - step;
+        }
+    }
+
+    if(*last > g_numItems)
+    {
+        *last = g_numItems;
+    }
+}
+
+void updatePositionDown(index_t* selected, index_t* first, index_t* last, bool twoColumns)
+{
+    int step = 1 + twoColumns;
+    *selected = (*selected) + step;
+
+    if(*selected > *last)
+    {
+        *first += step;
+        *last = *selected + twoColumns * (*selected % 2 ? 0 : 1);
+    }
+
+    if(*selected >= g_numItems)
+    {
+        *selected = 0 + twoColumns * (*selected % 2 ? 1 : 0);
+        *first = 0;
+
+        if(g_numItems < g_maxNumItemsOnScreen)
+        {
+            *last = g_numItems - 1;
+        } else
+        {
+            *last = g_maxNumItemsOnScreen - 1;
+        }
+    }
+
+    if(*last >= g_numItems)
+    {
+        *last = g_numItems - 1;
+    }
+}
+
+void updatePositionLeft(index_t* selected, index_t* first, index_t* last, bool twoColumns)
+{
+    if(twoColumns && (*selected % 2))
+    {
+        (*selected)--;
+    }
+}
+
+void updatePositionRight(index_t* selected, index_t* first, index_t* last, bool twoColumns)
+{
+    if(twoColumns && !(*selected % 2))
+    {
+        if(*selected < *last)
+        {
+            (*selected)++;
         }
     }
 }
 
-void jumpToPosition(index_t inputIndex, index_t* selected, index_t* first, index_t* last)
+void jumpToPosition(index_t inputIndex, index_t* selected, index_t* first, index_t* last, bool twoColumns)
 {
     while(inputIndex != *selected)
     {
         if(inputIndex > *selected)
         {
-            updatePosition(true, selected, first, last);
+            updatePositionDown(selected, first, last, twoColumns);
+            
+            // We can overshoot in 2 columns mode
+            if(inputIndex < *selected || (inputIndex == (g_numItems - 1) && *selected == (inputIndex - 1)))
+            {
+                *selected = inputIndex;
+
+                // But then first and last item visible might need to be updated
+                if(*selected > *last)
+                {
+                    (*first) = (*first) + 1 + twoColumns;
+                    (*last) = (*last) + 1 + twoColumns;
+                    if(*last > g_numItems - 1)
+                    {
+                        *last = g_numItems - 1;
+                    }
+                }
+            }
+
         } else if(inputIndex < *selected)
         {
-            updatePosition(false, selected, first, last);
+            updatePositionUp(selected, first, last, twoColumns);
+
+            if(inputIndex > *selected || inputIndex == 0 && *selected == 1)
+            {
+                *selected = inputIndex;
+
+                if(!twoColumns && *selected < *first)
+                {
+                    (*first) = *selected;
+                    (*last) = (*last) - 1;
+                }
+            }
         }
     }
 }
@@ -447,6 +557,11 @@ bool parseArguments(int argc, char** argv, struct SArguments* arguments)
             {
                 arguments->fileNameIndex = i + 1;
                 foundFileArg = true;
+            } else if(!strcmp(COLUMNS_OPTION, argv[i]))
+            {
+                arguments->columns = true;
+                g_maxNameLength = MAX_NAME_LENGTH_2;
+                g_maxNumItemsOnScreen = MAX_NUM_ITEMS_ON_SCREEN_2;
             } else if(!strcmp(ANSI_OPTION, argv[i]))
             {
                 arguments->noAnsi = true;
@@ -511,7 +626,10 @@ void main(int argc, char* argv[])
     int key = 0;
     index_t inputIndex = 0;
     bool quit = false;
-    struct SArguments arguments = { 0, false };
+    struct SArguments arguments = { 0, false, false };
+
+    // Flush printf without new line
+    setbuf(stdout, NULL);
     
     if(parseArguments(argc, argv, &arguments) &&
             readMenuFromFile(argv[arguments.fileNameIndex], &menu))
@@ -520,15 +638,15 @@ void main(int argc, char* argv[])
         screen(INT86_HIDE_CURSOR);
         screen(INT86_SET_CURSOR_HOME);
         
-        if(g_numItems < MAX_NUM_ITEMS_ON_SCREEN)
+        if(g_numItems < g_maxNumItemsOnScreen)
         {
             last = g_numItems - 1;
         } else
         {
-            last = MAX_NUM_ITEMS_ON_SCREEN - 1;
+            last = g_maxNumItemsOnScreen - 1;
         }
 
-        printMenu(menu, selected, first, last, arguments.noAnsi);
+        printMenu(menu, selected, first, last, arguments.noAnsi, arguments.columns);
     } else
     {
         quit = true;
@@ -548,10 +666,16 @@ void main(int argc, char* argv[])
                     errorLevel = ERRORLEVEL_EXIT_ERROR;
                     break;
                 case KEY_UP:
-                    updatePosition(false, &selected, &first, &last);
+                    updatePositionUp(&selected, &first, &last, arguments.columns);
                     break;
                 case KEY_DOWN:
-                    updatePosition(true, &selected, &first, &last);
+                    updatePositionDown(&selected, &first, &last, arguments.columns);
+                    break;
+                case KEY_LEFT:
+                    updatePositionLeft(&selected, &first, &last, arguments.columns);
+                    break;
+                case KEY_RIGHT:
+                    updatePositionRight(&selected, &first, &last, arguments.columns);
                     break;
                 case KEY_SELECT:
                     runSelected(selected, menu, &errorLevel);
@@ -566,7 +690,7 @@ void main(int argc, char* argv[])
             {
                 if(inputIndex < g_numItems)
                 {
-                    jumpToPosition(inputIndex, &selected, &first, &last);
+                    jumpToPosition(inputIndex, &selected, &first, &last, arguments.columns);
                 }
             }
 
@@ -575,12 +699,12 @@ void main(int argc, char* argv[])
             {
                 screen(INT86_CLEAR_SCREEN);
                 screen(INT86_SET_CURSOR_HOME);
-                printMenu(menu, selected, first, last, arguments.noAnsi);
+                printMenu(menu, selected, first, last, arguments.noAnsi, arguments.columns);
             }
         }
     }
     
-    // todo: we should free the malloced memory
+    // We should free the malloced memory
     // but when program exits, it's released anyway :)
     
     screen(INT86_RESTORE_CURSOR);
