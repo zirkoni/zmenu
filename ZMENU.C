@@ -393,7 +393,7 @@ bool handleAdditionalInput(int key, index_t* inputIndex)
 
 void updatePositionUp(index_t* selected, index_t* first, index_t* last, bool twoColumns)
 {
-    int step = 1 + twoColumns;
+    const unsigned step = 1 + twoColumns;
 
     if(*selected >= step)
     {
@@ -402,27 +402,23 @@ void updatePositionUp(index_t* selected, index_t* first, index_t* last, bool two
     {
         if(g_numItems % 2 == 0)
         {
-            *selected = g_numItems - 1 - twoColumns * (*selected % 2 ? 0 : 1);
+            const unsigned correction = twoColumns * (*selected % 2 ? 0 : 1);
+            *selected = g_numItems - 1 - correction;
+            *last = *selected + correction;
         } else
         {
-            *selected = g_numItems - 1 - twoColumns * (*selected % 2 ? 1 : 0);
+            const unsigned correction = twoColumns * (*selected % 2 ? 1 : 0);
+            *selected = g_numItems - 1 - correction;
+            *last = *selected + correction;
         }
 
         if(g_numItems >= g_maxNumItemsOnScreen)
         {
             *first = g_numItems - g_maxNumItemsOnScreen;
-            *first += twoColumns * (*first & 1);
+            *first += twoColumns * (*first & 1); // Round up to even number (first is always even in 2 column mode)
         } else
         {
             *first = 0;
-        }
-
-        if(g_numItems % 2 == 0)
-        {
-           *last = *selected + twoColumns * (*selected % 2 ? 0 : 1);
-        } else
-        {
-           *last = *selected + twoColumns * (*selected % 2 ? 1 : 0);
         }
     }
 
@@ -438,16 +434,11 @@ void updatePositionUp(index_t* selected, index_t* first, index_t* last, bool two
             *last = *last - step;
         }
     }
-
-    if(*last > g_numItems)
-    {
-        *last = g_numItems;
-    }
 }
 
 void updatePositionDown(index_t* selected, index_t* first, index_t* last, bool twoColumns)
 {
-    int step = 1 + twoColumns;
+    const unsigned step = 1 + twoColumns;
     *selected = (*selected) + step;
 
     if(*selected > *last)
