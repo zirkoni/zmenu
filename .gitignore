@@ -1,5 +1,6 @@
 _VIM*
 *~
-ZMENU*.EXE
-ZMENU*.OBJ
-ZMENU.ERR
+*.EXE
+*.OBJ
+*.ERR
+*.LNK

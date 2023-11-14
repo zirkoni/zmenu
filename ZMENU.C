@@ -1,18 +1,9 @@
+#include "int.h"
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dos.h>
-#include <i86.h>
 #include <conio.h>
-
-#define KEY_SELECT     13
-#define KEY_QUIT       27
-#define KEY_UP        328
-#define KEY_DOWN      336
-#define KEY_LEFT      331
-#define KEY_RIGHT     333
-#define KEY_BACKSPACE   8
 
 #define MAX_NAME_LENGTH_1         60
 #define MAX_NAME_LENGTH_2         38
@@ -20,13 +11,6 @@
 #define MAX_EXE_LENGTH            12
 #define MAX_NUM_ITEMS_ON_SCREEN_1 23
 #define MAX_NUM_ITEMS_ON_SCREEN_2 46
-
-#define INT86_SET_TEXT_MODE   0
-#define INT86_SET_CURSOR_HOME 1
-#define INT86_HIDE_CURSOR     2
-#define INT86_CLEAR_SCREEN    3
-#define INT86_RESTORE_CURSOR  4
-#define INT86_SET_CURSOR_POS  5
 
 #define ERRORLEVEL_CONTINUE   0
 #define ERRORLEVEL_EXIT_ERROR 1
@@ -264,79 +248,6 @@ bool readMenuFromFile(char* fileName, struct SMenuItem** menu)
     }
 
     return readFileOk;
-}
-
-void screenDo(const unsigned op, unsigned short arg1, unsigned short arg2)
-{
-    union REGS regs;
-
-    switch(op)
-    {
-        case INT86_SET_TEXT_MODE:
-            regs.h.ah = 0x00;
-            regs.h.al = 0x03;
-            break;
-
-        case INT86_SET_CURSOR_POS:
-        case INT86_SET_CURSOR_HOME:
-            regs.h.ah = 0x02;
-            regs.h.bh = 0x00;
-            regs.h.dh = arg1;
-            regs.h.dl = arg2;
-            break;
-
-        case INT86_HIDE_CURSOR:
-            regs.h.ah = 0x01;
-            regs.w.cx = 0x2607;
-            break;
-
-        case INT86_CLEAR_SCREEN:
-            regs.w.cx = 0;
-            regs.w.dx = 0x1850;
-            regs.h.bh = 7;
-            regs.w.ax = 0x0600;
-            break;
-
-        case INT86_RESTORE_CURSOR:
-        default:
-            regs.h.ah = 0x01;
-            regs.w.cx = 0x0607;
-            break;
-    }
-
-#if defined(__386__)
-    int386(0x10, &regs, &regs);
-#else
-    int86(0x10, &regs, &regs);
-#endif
-}
-
-void screen(const unsigned op)
-{
-    screenDo(op, 0, 0);
-}
-
-void setCursorPosition(unsigned short x, unsigned short y)
-{
-    screenDo(INT86_SET_CURSOR_POS, x, y);
-}
-
-int checkKey()
-{
-    union REGS regs;
-    regs.h.ah = 0x08;
-#if defined(__386__)
-    int386(0x21, &regs, &regs);
-#else
-    int86(0x21, &regs, &regs);
-#endif
-    if(regs.h.al == 0)
-    {
-        return(checkKey() + 0x100);
-    } else
-    {
-        return(regs.h.al);
-    }
 }
 
 void printInput(index_t* inputIndex)

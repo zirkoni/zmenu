@@ -1,35 +1,52 @@
-obj = zmenu.obj
-bin = zmenu.exe
-obj32 = zmenu32.obj
-bin32 = zmenu32.exe
+# If only a header file is modified, need to run "wmake clean" to recompile.
+# Need to run "wmake clean" before compiling for different target (16/32-bit).
 
-CC = wcc
-CC32 = wcc386
-CFLAGS = -zq -mc -oh
-CFLAGS32 = -zq -oh
+OBJECTS = zmenu.obj int.obj
+
 LD = wlink
 
-system = dos
-system32 = dos4g
+.EXTENSIONS:
+.EXTENSIONS: .exe .obj .c
 
-$(bin): $(obj)
-	$(LD) system $(system) name $@ file { $(obj) }
-
-$(bin32): $(obj32)
-	$(LD) system $(system32) name $@ file { $(obj32) }
-
-$(obj): zmenu.c
-	$(CC) -fo=$(obj) $(CFLAGS) $<
-
-$(obj32): zmenu.c
-	$(CC32) -fo=$(obj32) $(CFLAGS32) $<
-
-all: $(bin) $(bin32) .SYMBOLIC
+# Build without .exe extension
+zmenu: zmenu.exe .SYMBOLIC
     @%null
 
+zmenu32: zmenu32.exe .SYMBOLIC
+    @%null
+
+zmenu.exe: env16 $(OBJECTS)
+	%make zmenu.lnk
+	$(LD) @zmenu.lnk
+
+zmenu32.exe: env32 $(OBJECTS)
+	%make zmenu.lnk
+	$(LD) @zmenu.lnk
+
+env16: .SYMBOLIC
+	set NAME=zmenu
+	set CC = wcc
+	set CFLAGS = -zq -mc -oh
+	set SYSTEM = dos
+
+env32: .SYMBOLIC
+	set NAME=zmenu32
+	set CC = wcc386
+	set CFLAGS = -zq -oh
+	set SYSTEM = dos4g
+
+zmenu.lnk:
+	%create $@
+	%append $@ NAME $(%NAME)
+	%append $@ SYSTEM $(%SYSTEM)
+	%append $@ FILE {$(OBJECTS)}
+
+.ERASE
+.c.obj:
+	$(%CC) -fo=$@ $(%CFLAGS) $<
+
 clean: .SYMBOLIC
-	@if exist $(obj) del $(obj)
-	@if exist $(obj32) del $(obj32)
-	@if exist $(bin) del $(bin)
-	@if exist $(bin32) del $(bin32)
+	@if exist *.LNK del *.LNK
+	@if exist *.OBJ del *.OBJ
+	@if exist *.EXE del *.EXE
 	@if exist *.ERR del *.ERR
