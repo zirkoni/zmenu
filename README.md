@@ -15,7 +15,7 @@ https://github.com/open-watcom/open-watcom-v2
 Run the _wmake_ command to compile.
 
 The 32-bit executable can be compiled with the following command:
-_wmake_ zmenu32
+_wmake_ _zmenu32_
 
 ## Usage
 1. Put all the zmenu files in C:\ZMENU
