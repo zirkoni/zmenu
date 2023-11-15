@@ -1,22 +1,13 @@
 #include "int.h"
 #include "position.h"
-#include <stdlib.h>
+#include "copy_str.h"
 #include <string.h>
 #include <conio.h>
-
-#define MAX_NAME_LENGTH_1         60
-#define MAX_NAME_LENGTH_2         38
-#define MAX_PATH_LENGTH           36
-#define MAX_EXE_LENGTH            12
-
-#define ERRORLEVEL_CONTINUE   0
-#define ERRORLEVEL_EXIT_ERROR 1
 
 static const char* FILE_OPTION    = "/file";
 static const char* COLUMNS_OPTION = "/col";
 static const char* ANSI_OPTION    = "/noansi";
 
-size_t g_maxNameLength = MAX_NAME_LENGTH_1;
 
 struct SArguments
 {
@@ -104,67 +95,6 @@ void printMenu(struct SMenuItem* menu, int selected,
         item = item->next;
         ++i;
     }
-}
-
-int numDigits(index_t number)
-{
-    int result = 1;
-    while(number /= 10)
-    {
-        ++result;
-    }
-
-    return result;
-}
-
-bool copyStringWithPrefix(char** to, char* from, size_t size,
-        size_t maxSize, int endOfFile, bool usePrefix, index_t prefix)
-{
-    int offset = 0;
-    size_t realSize = size;
-
-    if(usePrefix)
-    {
-        offset = numDigits(prefix) + 2; // dot + space = +2
-        realSize = realSize + offset;
-    }
-
-    if(endOfFile) ++realSize;
-    if(realSize > maxSize)
-    {
-        realSize = maxSize;
-        size = realSize - offset;
-    }
-
-    (*to) = malloc(realSize);
-
-    if((*to) != NULL)
-    {
-        if(usePrefix)
-        {
-            sprintf((*to), "%lu. ", g_numItems);
-        }
-
-        memcpy((*to) + offset, from, size);
-        (*to)[realSize - 1] = 0;
-    } else
-    {
-        printf("ERROR: malloc failed. Menu too big?\n");
-        return false;
-    }
-
-    return true;
-}
-
-bool copyString(char** to, char* from, size_t size,
-        size_t maxSize, int endOfFile)
-{
-    return copyStringWithPrefix(to, from, size, maxSize, endOfFile, false, 0);
-}
-
-bool copyName(char** to, char* from, size_t size, int endOfFile)
-{
-    return copyStringWithPrefix(to, from, size, g_maxNameLength, endOfFile, true, g_numItems);
 }
 
 bool readMenuFromFile(char* fileName, struct SMenuItem** menu)

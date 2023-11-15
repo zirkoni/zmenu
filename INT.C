@@ -1,4 +1,5 @@
 #include "int.h"
+#include "common.h"
 #include <dos.h>
 #include <i86.h>
 
