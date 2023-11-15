@@ -1,7 +1,7 @@
 # If only a header file is modified, need to run "wmake clean" to recompile.
 # Need to run "wmake clean" before compiling for different target (16/32-bit).
 
-OBJECTS = zmenu.obj int.obj position.obj copy_str.obj input.obj menu.obj
+OBJECTS = main.obj int.obj position.obj copy_str.obj input.obj menu.obj
 
 LD = wlink
 
