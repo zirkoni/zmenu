@@ -20,19 +20,12 @@ struct SArguments
 void printHelp()
 {
     printf("ZMENU\n");
-    printf("Usage: zmenu.exe %s menu.txt [%s]\n\n", FILE_OPTION, ANSI_OPTION);
+    printf("Usage: zmenu.exe %s menu.txt [%s] [%s]\n\n", FILE_OPTION, ANSI_OPTION, COLUMNS_OPTION);
     printf("Keys:\n");
-    printf("Up/Down arrow keys to change selection.\n");
-    printf("Number keys to jump to index.\n");
-    printf("Enter to accept.\n");
-    printf("Escape to exit.\n\n");
-    printf("menu.txt entry example (character limits %u, %u and %u):\n",
-            g_maxNameLength - 1, MAX_PATH_LENGTH - 1, MAX_EXE_LENGTH - 1);
-    printf("Commander Keen 1: Marooned on Mars\n");
-    printf("c:\\keen1\n");
-    printf("keen1.exe\n\n");
-    printf("Output on screen:\n");
-    printf("0. Commander Keen 1: Marooned on Mars\n");
+    printf("- Arrow keys to change selection\n");
+    printf("- Number keys to jump to index\n");
+    printf("- Enter to accept\n");
+    printf("- Escape to exit\n\n");
 }
 
 bool parseArguments(int argc, char** argv, struct SArguments* arguments)
