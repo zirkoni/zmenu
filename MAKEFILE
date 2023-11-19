@@ -10,10 +10,10 @@ LD = wlink
 
 # Build without .exe extension
 zmenu: zmenu.exe .SYMBOLIC
-    @%null
+	@%null
 
 zmenu32: zmenu32.exe .SYMBOLIC
-    @%null
+	@%null
 
 zmenu.exe: env16 $(OBJECTS)
 	%make zmenu.lnk
