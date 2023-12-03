@@ -9,73 +9,110 @@ void updatePositionUp(index_t* selected, index_t* first, index_t* last, bool two
 
     if(*selected >= step)
     {
-        *selected = (*selected) - step;
+        *selected = *selected - step;
+
+        // Scroll
+        if(*selected < *first)
+        {
+            *first = *first - step;
+
+            // If 1st column longer than 2nd, last item is visible
+            if(twoColumns && *last == (g_numItems - 1) && (*last % 2) == 0)
+            {
+                *last = *last - 1;
+            } else
+            {
+                *last = *last - step;
+            }
+        }
     } else
     {
-        if(g_numItems % 2 == 0)
+        if(twoColumns)
         {
-            const unsigned correction = twoColumns * (*selected % 2 ? 0 : 1);
-            *selected = g_numItems - 1 - correction;
-            *last = *selected + correction;
+            *last = g_numItems - 1;
+
+            if(*selected % 2) // 2nd column
+            {
+                if(g_numItems % 2) // 1st column is longer than 2nd
+                {
+                    *selected = g_numItems - 2;
+                    *first = *last - g_maxNumItemsOnScreen + 2;
+                } else
+                {
+                    *selected = g_numItems - 1;
+                    *first = *last - g_maxNumItemsOnScreen + 1;
+                }
+            } else // 1st column
+            {
+                if(g_numItems % 2) // 1st column is longer
+                {
+                    *selected = g_numItems - 1;
+                    *first = *last - g_maxNumItemsOnScreen + 2;
+                } else
+                {
+                    *selected = g_numItems - 2;
+                    *first = *last - g_maxNumItemsOnScreen + 1;
+                }
+            }
+
+            // 1st is always 0 for small menu
+            if(g_numItems < g_maxNumItemsOnScreen)
+            {
+                *first = 0;
+            }
+
         } else
         {
-            const unsigned correction = twoColumns * (*selected % 2 ? 1 : 0);
-            *selected = g_numItems - 1 - correction;
-            *last = *selected + correction;
-        }
+            *selected = g_numItems - 1;
 
-        if(g_numItems >= g_maxNumItemsOnScreen)
-        {
-            *first = g_numItems - g_maxNumItemsOnScreen;
-            *first += twoColumns * (*first & 1); // Round up to even number (first is always even in 2 column mode)
-        } else
-        {
-            *first = 0;
-        }
-    }
+            if(g_numItems >= g_maxNumItemsOnScreen)
+            {
+                *first = g_numItems - g_maxNumItemsOnScreen;
+            } else
+            {
+                *first = 0;
+            }
 
-    if(*selected < *first)
-    {
-        *first = *first - step;
-
-        if(g_numItems % 2 != 0 && *last == (g_numItems - 1))
-        {
-            *last = *last - 1;
-        } else
-        {
-            *last = *last - step;
+            *last = *selected;
         }
     }
 }
 
 void updatePositionDown(index_t* selected, index_t* first, index_t* last, bool twoColumns)
 {
-    const unsigned step = 1 + twoColumns;
+    const int step = 1 + twoColumns;
     *selected = (*selected) + step;
-
-    if(*selected > *last)
-    {
-        *first += step;
-        *last = *selected + twoColumns * (*selected % 2 ? 0 : 1);
-    }
 
     if(*selected >= g_numItems)
     {
-        *selected = 0 + twoColumns * (*selected % 2 ? 1 : 0);
-        *first = 0;
-
-        if(g_numItems < g_maxNumItemsOnScreen)
+        // Return to beginning
+        if(!twoColumns || !(*selected % 2))
         {
-            *last = g_numItems - 1;
+            *selected = 0;
         } else
         {
-            *last = g_maxNumItemsOnScreen - 1;
+            *selected = 1;
         }
-    }
 
-    if(*last >= g_numItems)
+        *first = 0;
+
+        if(g_numItems > g_maxNumItemsOnScreen)
+        {
+            *last = g_maxNumItemsOnScreen - 1;
+        } else
+        {
+            *last = g_numItems - 1;
+        }
+    } else if(*selected > *last)
     {
-        *last = g_numItems - 1;
+        // Scroll
+        *first += step;
+        *last += step;
+
+        if(*last >= g_numItems)
+        {
+            *last = g_numItems - 1;
+        }
     }
 }
 
