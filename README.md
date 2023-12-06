@@ -29,3 +29,4 @@ _wmake_ _zmenu32_
     - Esc to exit
     - You can also type a number to jump to index
         - Enter and escape keys work for accept/exit here as well
+    - S-key to search a string, F3 to repeat the search
