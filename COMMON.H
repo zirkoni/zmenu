@@ -1,14 +1,6 @@
 #pragma once
 #include <stdio.h>
 
-#define KEY_SELECT     13
-#define KEY_QUIT       27
-#define KEY_UP        328
-#define KEY_DOWN      336
-#define KEY_LEFT      331
-#define KEY_RIGHT     333
-#define KEY_BACKSPACE   8
-
 #define INT86_SET_TEXT_MODE   0
 #define INT86_SET_CURSOR_HOME 1
 #define INT86_HIDE_CURSOR     2

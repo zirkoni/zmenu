@@ -3,6 +3,14 @@
 #include "position.h"
 #include <conio.h>
 
+#define KEY_SELECT     13
+#define KEY_QUIT       27
+#define KEY_UP        328
+#define KEY_DOWN      336
+#define KEY_LEFT      331
+#define KEY_RIGHT     333
+#define KEY_BACKSPACE   8
+
 void printInput(index_t* inputIndex)
 {
     screen(INT86_SET_CURSOR_HOME);
