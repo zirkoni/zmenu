@@ -2,9 +2,7 @@
 #include "position.h"
 #include "copy_str.h"
 #include "input.h"
-#include "menu.h"
 #include <string.h>
-#include <conio.h>
 
 static const char* FILE_OPTION    = "/file";
 static const char* COLUMNS_OPTION = "/col";
@@ -70,14 +68,15 @@ bool parseArguments(int argc, char** argv, struct SArguments* arguments)
 void main(int argc, char* argv[])
 {
     struct SMenuItem* menu = NULL;
-    int errorLevel = ERRORLEVEL_EXIT_ERROR;
-    index_t selected = 0;
-    index_t first = 0;
-    index_t last = 0;
-    int key = 0;
-    index_t inputIndex = 0;
-    bool quit = false;
     struct SArguments arguments = { 0, false, false };
+    struct ProgramStatus status;
+    status.quit = false;
+    status.changeToIndex = false;
+    status.errorLevel = ERRORLEVEL_EXIT_ERROR;
+    status.selected = 0;
+    status.first = 0;
+    status.last = 0;
+    status.inputIndex = 0;
 
     // Flush printf without new line
     setbuf(stdout, NULL);
@@ -91,66 +90,37 @@ void main(int argc, char* argv[])
         
         if(g_numItems < g_maxNumItemsOnScreen)
         {
-            last = g_numItems - 1;
+            status.last = g_numItems - 1;
         } else
         {
-            last = g_maxNumItemsOnScreen - 1;
+            status.last = g_maxNumItemsOnScreen - 1;
         }
 
-        printMenu(menu, selected, first, last, arguments.noAnsi, arguments.columns);
+        printMenu(menu, status.selected, status.first, status.last, arguments.noAnsi, arguments.columns);
     } else
     {
-        quit = true;
+        status.quit = true;
     }
 
-    while(!quit)
+    while(!status.quit)
     {
-        if(kbhit())
+        if(handleInput(&status, menu, arguments.columns))
         {
-            bool changeToIndex = false;
-            key = checkKey();
-
-            switch(key)
+            if(status.changeToIndex)
             {
-                case KEY_QUIT:
-                    quit = true;
-                    errorLevel = ERRORLEVEL_EXIT_ERROR;
-                    break;
-                case KEY_UP:
-                    updatePositionUp(&selected, &first, &last, arguments.columns);
-                    break;
-                case KEY_DOWN:
-                    updatePositionDown(&selected, &first, &last, arguments.columns);
-                    break;
-                case KEY_LEFT:
-                    updatePositionLeft(&selected, &first, &last, arguments.columns);
-                    break;
-                case KEY_RIGHT:
-                    updatePositionRight(&selected, &first, &last, arguments.columns);
-                    break;
-                case KEY_SELECT:
-                    runSelected(selected, menu, &errorLevel);
-                    quit = true;
-                    break;
-                default:
-                    changeToIndex = handleAdditionalInput(key, &inputIndex);
-                    break;
-            }
-
-            if(changeToIndex)
-            {
-                if(inputIndex < g_numItems)
+                status.changeToIndex = false;
+                if(status.inputIndex < g_numItems)
                 {
-                    jumpToPosition(inputIndex, &selected, &first, &last, arguments.columns);
+                    jumpToPosition(status.inputIndex, &status.selected, &status.first, &status.last, arguments.columns);
                 }
             }
 
-            inputIndex = 0;
-            if(!quit)
+            status.inputIndex = 0;
+            if(!status.quit)
             {
                 screen(INT86_CLEAR_SCREEN);
                 screen(INT86_SET_CURSOR_HOME);
-                printMenu(menu, selected, first, last, arguments.noAnsi, arguments.columns);
+                printMenu(menu, status.selected, status.first, status.last, arguments.noAnsi, arguments.columns);
             }
         }
     }
@@ -159,5 +129,5 @@ void main(int argc, char* argv[])
     // but when program exits, it's released anyway :)
     
     screen(INT86_RESTORE_CURSOR);
-    exit(errorLevel);
+    exit(status.errorLevel);
 }
