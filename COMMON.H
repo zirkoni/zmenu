@@ -14,7 +14,7 @@
 #define MAX_NAME_LENGTH_1         60
 #define MAX_NAME_LENGTH_2         38
 #define MAX_PATH_LENGTH           36
-#define MAX_EXE_LENGTH            12
+#define MAX_EXE_LENGTH            13
 
 #define ERRORLEVEL_CONTINUE   0
 #define ERRORLEVEL_EXIT_ERROR 1
