@@ -102,6 +102,8 @@ void main(int argc, char* argv[])
         status.quit = true;
     }
 
+    clearKeyboardBuffer();
+
     while(!status.quit)
     {
         if(handleInput(&status, menu, arguments.columns))

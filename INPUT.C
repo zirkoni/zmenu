@@ -249,3 +249,11 @@ bool handleInput(struct ProgramStatus* status, struct SMenuItem* menu, bool colu
 
     return false;
 }
+
+void clearKeyboardBuffer()
+{
+    while(kbhit())
+    {
+        checkKey();
+    }
+}

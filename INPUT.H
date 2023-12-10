@@ -15,3 +15,4 @@ struct ProgramStatus
 };
 
 bool handleInput(struct ProgramStatus* status, struct SMenuItem* menu, bool columns);
+void clearKeyboardBuffer();
