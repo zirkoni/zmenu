@@ -80,14 +80,14 @@ void main(int argc, char* argv[])
 
     // Flush printf without new line
     setbuf(stdout, NULL);
-    
+
     if(parseArguments(argc, argv, &arguments) &&
             readMenuFromFile(argv[arguments.fileNameIndex], &menu))
     {
         screen(INT86_SET_TEXT_MODE);
         screen(INT86_HIDE_CURSOR);
         screen(INT86_SET_CURSOR_HOME);
-        
+
         if(g_numItems < g_maxNumItemsOnScreen)
         {
             status.last = g_numItems - 1;
@@ -126,10 +126,10 @@ void main(int argc, char* argv[])
             }
         }
     }
-    
+
     // We should free the malloced memory
     // but when program exits, it's released anyway :)
-    
+
     screen(INT86_RESTORE_CURSOR);
     exit(status.errorLevel);
 }
