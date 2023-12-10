@@ -22,6 +22,7 @@ void printHelp()
     printf("Keys:\n");
     printf("- Arrow keys to change selection\n");
     printf("- Number keys to jump to index\n");
+    printf("- S to search, F3 to repeat the search\n");
     printf("- Enter to accept\n");
     printf("- Escape to exit\n\n");
 }
