@@ -124,7 +124,6 @@ void doSearch(const char* searchString, struct ProgramStatus* status, struct SMe
 
     while(true)
     {
-        // NB: The index number at the beginning is included in the search => TODO: fix
         resultPtr = strstr(item->name, searchString);
 
         if(resultPtr != NULL)

@@ -16,35 +16,20 @@ int numDigits(index_t number)
 }
 
 bool copyStringWithPrefix(char** to, char* from, size_t size,
-        size_t maxSize, int endOfFile, bool usePrefix, index_t prefix)
+        size_t maxSize, int endOfFile, size_t prefixLen)
 {
-    int offset = 0;
-    size_t realSize = size;
-
-    if(usePrefix)
+    if(endOfFile) ++size;
+    if((size + prefixLen) > maxSize)
     {
-        offset = numDigits(prefix) + 2; // dot + space = +2
-        realSize = realSize + offset;
+        size = maxSize - prefixLen;
     }
 
-    if(endOfFile) ++realSize;
-    if(realSize > maxSize)
-    {
-        realSize = maxSize;
-        size = realSize - offset;
-    }
-
-    (*to) = malloc(realSize);
+    (*to) = malloc(size);
 
     if((*to) != NULL)
     {
-        if(usePrefix)
-        {
-            sprintf((*to), "%lu. ", g_numItems);
-        }
-
-        memcpy((*to) + offset, from, size);
-        (*to)[realSize - 1] = 0;
+        memcpy(*to, from, size);
+        (*to)[size - 1] = 0;
     } else
     {
         printf("ERROR: malloc failed. Menu too big?\n");
@@ -56,11 +41,12 @@ bool copyStringWithPrefix(char** to, char* from, size_t size,
 
 bool copyString(char** to, char* from, size_t size, size_t maxSize, int endOfFile)
 {
-    return copyStringWithPrefix(to, from, size, maxSize, endOfFile, false, 0);
+    return copyStringWithPrefix(to, from, size, maxSize, endOfFile, 0);
 }
 
 bool copyName(char** to, char* from, size_t size, int endOfFile)
 {
-    return copyStringWithPrefix(to, from, size, g_maxNameLength, endOfFile, true, g_numItems);
+    size_t prefixLen = numDigits(g_numItems) + 2; // dot + space = +2
+    return copyStringWithPrefix(to, from, size, g_maxNameLength, endOfFile, prefixLen);
 }
 

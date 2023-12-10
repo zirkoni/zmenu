@@ -8,6 +8,7 @@ struct SMenuItem* newMenuItem()
     struct SMenuItem* item = malloc(sizeof(struct SMenuItem));
     if(item != NULL)
     {
+        item->idx = 0;
         item->name = NULL;
         item->path = NULL;
         item->executable = NULL;
@@ -40,15 +41,15 @@ void printMenu(struct SMenuItem* menu, int selected,
 
         if(i != selected)
         {
-            printf(" %s", item->name);
+            printf(" %lu. %s", item->idx, item->name);
         } else
         {
             if(!noAnsi)
             {
-                printf(" \033[7m%s\033[0m", item->name);
+                printf(" \033[7m%lu. %s\033[0m", item->idx, item->name);
             } else
             {
-                printf("[%s]", item->name);
+                printf("[%lu. %s]", item->idx, item->name);
             }
         }
 
@@ -88,6 +89,7 @@ bool readMenuFromFile(char* fileName, struct SMenuItem** menu)
             
                 if(item->name == NULL)
                 {
+                    item->idx = g_numItems;
                     readFileOk = copyName(&(item->name), line, len, feof(file));
                 } else if(item->path == NULL)
                 {

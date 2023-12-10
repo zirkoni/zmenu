@@ -4,6 +4,7 @@
 
 struct SMenuItem
 {
+    index_t idx;
     char* name;
     char* path;
     char* executable;
